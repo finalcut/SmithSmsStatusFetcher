@@ -1,4 +1,4 @@
-# Intro
+# Overview
 
 This project is intended to utilize the Twilio API to fetch the status of messages the Steven Smith campiagn already has the message sid of.
 
@@ -24,6 +24,12 @@ there is no guarantee that this app will work and that you won't have your API a
 
 ## Known Issues:
 
+### Entity Framework
 If you're good with Entity Framework - I'm not - you can improve this greatly by fixing the `TwilioProcessingService.ReadAllMessagesAsync` process.  It currently uses the Twilio helper library to fetch 1000 records at a time but the change tracking in EF was causing me some grief and I wasn't really sure how to resolve it and I wasn't feeling in the mood to do more research.  A PULL REQUEST would be greatly appreciated.
 
 Basically, in the processing it loops and tries to get the current status record from the db for the message id, if none exists it creates one and inserts the record into the db.  I think during the paging it may get the same message id multiple times so after it creates the record it later tries to fetch it and then update it.  But the update fails becuase EF is already tracking the changes.  I don't know what to do to get rid of the first model EF knows about so it can update the subsequent one.
+
+### Batch Size and Job Frequency
+
+I really should move the batch size and job frequency into appsettings as well.  Its pretty dumb to have them embedded in there.
+I could also probably make a setting that determines if it will run on a batch or do the `ReadAllMessagesAsync` process when that is fixed.
