@@ -51,9 +51,9 @@ namespace SmithSmsStatusFetcher.Services
 
         public async Task ReadBatchoFMesssagesAsync(int batchSize)
         {
-            var sql = $"SELECT * FROM assigment_messages_status WHERE STATUS IS NULL ORDER BY message_sid LIMIT {batchSize}";
+            var sql = $"SELECT * FROM assignment_message_status WHERE STATUS IS NULL ORDER BY message_sid LIMIT {batchSize}";
 
-            List<AssigmentMessagesStatus> statuses = await _dbContext.Set<AssigmentMessagesStatus>()
+            List<AssignmentMessagesStatus> statuses = await _dbContext.Set<AssignmentMessagesStatus>()
                                                                     .AsQueryable()
                                                                     .Where(o => o.Status == null)
                                                                     .OrderBy(o => o.MessageSid)
@@ -91,9 +91,9 @@ namespace SmithSmsStatusFetcher.Services
             await ProcessOneAsync(message, null);
         }
 
-        public async Task<AssigmentMessagesStatus> GetMessageStatusRecordAsync(string sid)
+        public async Task<AssignmentMessagesStatus> GetMessageStatusRecordAsync(string sid)
         {
-            return await _dbContext.Set<AssigmentMessagesStatus>().Where(o => o.MessageSid == sid).SingleOrDefaultAsync();
+            return await _dbContext.Set<AssignmentMessagesStatus>().Where(o => o.MessageSid == sid).SingleOrDefaultAsync();
 
         }
 
@@ -106,7 +106,7 @@ namespace SmithSmsStatusFetcher.Services
         /// <returns></returns>
         public async Task CreateNewMessageStatusAsync(MessageResource message)
         {
-            AssigmentMessagesStatus status = new AssigmentMessagesStatus()
+            AssignmentMessagesStatus status = new AssignmentMessagesStatus()
             {
                 MessageSid = message.MessagingServiceSid,
                 Status = message.Status.ToString()
@@ -118,17 +118,17 @@ namespace SmithSmsStatusFetcher.Services
 
         }
 
-        public async Task UpdateMessageStatusAsync(AssigmentMessagesStatus statusRecord, MessageResource message)
+        public async Task UpdateMessageStatusAsync(AssignmentMessagesStatus statusRecord, MessageResource message)
         {
             statusRecord.Status = message.Status.ToString();
-            statusRecord.ErrorStatus = message.ErrorCode.ToString();
+            statusRecord.ErrorCode = message.ErrorCode;
             //_dbContext.Update(statusRecord);
             _ = await _dbContext.SaveChangesAsync();
         }
 
 
 
-        public async Task ProcessOneAsync(MessageResource message, AssigmentMessagesStatus? statusRecord)
+        public async Task ProcessOneAsync(MessageResource message, AssignmentMessagesStatus? statusRecord)
         {
             _logger.LogInformation($"Processing message with SID: {message.Sid} and status {message.Status}");
             if (!_processed.Contains(message.Sid))

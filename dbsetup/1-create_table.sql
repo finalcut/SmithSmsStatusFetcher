@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `assignment_messages_status` (
   `message_sid` varchar(50) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL DEFAULT uuid(),
   `contact_id` bigint(20) DEFAULT NULL,
   `status` varchar(50) CHARACTER SET latin2 DEFAULT NULL,
-  `error_status` varchar(50) DEFAULT NULL,
+  `error_code` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`message_sid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

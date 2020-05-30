@@ -52,11 +52,9 @@ namespace SmithSmsStatusFetcher.Models
                     .HasColumnName("contact_id")
                     .HasColumnType("bigint(20)");
 
-                entity.Property(e => e.ErrorStatus)
-                    .HasColumnName("error_status")
-                    .HasColumnType("varchar(50)")
-                    .HasCharSet("latin1")
-                    .HasCollation("latin1_swedish_ci");
+                entity.Property(e => e.ErrorCode)
+                    .HasColumnName("error_code")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.Status)
                     .HasColumnName("status")
