@@ -61,7 +61,9 @@ namespace SmithSmsStatusFetcher.Services
             return TriggerBuilder
                 .Create()
                 .WithIdentity($"{schedule.JobType.FullName}.trigger")
+                .StartNow()
                 .WithCronSchedule(schedule.CronExpression)
+                //.WithSchedule(SimpleScheduleBuilder.RepeatSecondlyForTotalCount(1).WithRepeatCount(0))
                 .WithDescription(schedule.CronExpression)
                 .Build();
         }

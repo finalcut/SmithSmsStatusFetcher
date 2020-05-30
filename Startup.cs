@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Pomelo.EntityFrameworkCore.MySql.Storage;
 using Quartz;
@@ -32,7 +33,10 @@ namespace SmithSmsStatusFetcher
             {
                 options = LoadDbSettings(context.Configuration, options);
             });
+            services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<DbSettings>>().Value);
+            services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<TwilioSecrets>>().Value);
 
+            services.AddTransient<TwilioProcessingService>();
 
             services.AddSingleton<IJobFactory, JobFactory>();
             services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
@@ -46,6 +50,7 @@ namespace SmithSmsStatusFetcher
             var sp = services.BuildServiceProvider();
             DbSettings dbSettings = sp.GetService<DbSettings>();
 
+
             services.AddDbContext<SmithDbContext>(options => options
                             .UseMySql(dbSettings.ConnectionString,
                                 mysqlOptions =>
@@ -53,8 +58,8 @@ namespace SmithSmsStatusFetcher
 
             services.AddSingleton(new JobSchedule(
                 jobType: typeof(MessageStatusProcessorJob),
-                //cronExpression: "* * 0 ? * * *"  // every minute
-                cronExpression: "0/15 * * * * ?") // every 15 seconds  
+                                                  cronExpression: "0/3 * * * * ?") // every 3 seconds  
+                                                                                   //cronExpression: "0 5 0 ? * * *")  // every minute
                 );
 
             return services;

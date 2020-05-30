@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System;
 
 namespace SmithSmsStatusFetcher.Models
 {
@@ -21,6 +23,12 @@ namespace SmithSmsStatusFetcher.Models
         {
             if (!optionsBuilder.IsConfigured)
             {
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                .AddUserSecrets<Program>()
+                .Build();
+
+                optionsBuilder.UseMySql(configuration.GetConnectionString("Smith"), x => x.ServerVersion("10.4.13-mariadb"));
             }
         }
 
@@ -28,19 +36,27 @@ namespace SmithSmsStatusFetcher.Models
         {
             modelBuilder.Entity<AssigmentMessagesStatus>(entity =>
             {
-                entity.HasNoKey();
+                entity.HasKey(e => e.MessageSid)
+                    .HasName("PRIMARY");
 
                 entity.ToTable("assigment_messages_status");
+
+                entity.Property(e => e.MessageSid)
+                    .HasColumnName("message_sid")
+                    .HasColumnType("varchar(50)")
+                    .HasDefaultValueSql("'uuid()'")
+                    .HasCharSet("latin1")
+                    .HasCollation("latin1_general_ci");
 
                 entity.Property(e => e.ContactId)
                     .HasColumnName("contact_id")
                     .HasColumnType("bigint(20)");
 
-                entity.Property(e => e.MessageSid)
-                    .HasColumnName("message_sid")
+                entity.Property(e => e.ErrorStatus)
+                    .HasColumnName("error_status")
                     .HasColumnType("varchar(50)")
                     .HasCharSet("latin1")
-                    .HasCollation("latin1_general_ci");
+                    .HasCollation("latin1_swedish_ci");
 
                 entity.Property(e => e.Status)
                     .HasColumnName("status")
