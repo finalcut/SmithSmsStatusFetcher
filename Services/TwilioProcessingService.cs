@@ -97,6 +97,13 @@ namespace SmithSmsStatusFetcher.Services
 
         }
 
+        /// <summary>
+        /// ideally this just creates a new record.. but for some reason when looping over new items
+        /// that later get updated I ran into ef issues.  I don't know what the cause is; mostly because
+        // I'm pretty dumb about EF
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
         public async Task CreateNewMessageStatusAsync(MessageResource message)
         {
             AssigmentMessagesStatus status = new AssigmentMessagesStatus()
