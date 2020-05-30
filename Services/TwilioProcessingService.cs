@@ -34,10 +34,10 @@ namespace SmithSmsStatusFetcher.Services
         {
             TwilioClient.Init(_twilioSecrets.AccountSid, _twilioSecrets.AuthToken);
 
-            var messages = MessageResource.Read(
+            var messages = await MessageResource.ReadAsync(
                 dateSentBefore: DateTime.Now,
                 dateSentAfter: new DateTime(2020, 4, 1, 0, 0, 0),
-                limit: 1000
+                pageSize: 1000
            );
 
             messages.AutoPaging = true;
