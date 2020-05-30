@@ -15,7 +15,7 @@ namespace SmithSmsStatusFetcher.Models
         {
         }
 
-        public virtual DbSet<AssigmentMessagesStatus> AssigmentMessagesStatus { get; set; }
+        public virtual DbSet<AssignmentMessagesStatus> AssigmentMessagesStatus { get; set; }
         public virtual DbSet<AssignmentMessages> AssignmentMessages { get; set; }
         public virtual DbSet<DriveContacts> DriveContacts { get; set; }
 
@@ -34,12 +34,12 @@ namespace SmithSmsStatusFetcher.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<AssigmentMessagesStatus>(entity =>
+            modelBuilder.Entity<AssignmentMessagesStatus>(entity =>
             {
                 entity.HasKey(e => e.MessageSid)
                     .HasName("PRIMARY");
 
-                entity.ToTable("assigment_messages_status");
+                entity.ToTable("assignment_message_status");
 
                 entity.Property(e => e.MessageSid)
                     .HasColumnName("message_sid")

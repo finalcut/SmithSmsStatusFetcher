@@ -11,7 +11,7 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 
--- Dumping structure for table stevensmith.assigment_messages_status
+-- Dumping structure for table stevensmith.assignment_message_status
 CREATE TABLE IF NOT EXISTS `assignment_messages_status` (
   `message_sid` varchar(50) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL DEFAULT uuid(),
   `contact_id` bigint(20) DEFAULT NULL,
