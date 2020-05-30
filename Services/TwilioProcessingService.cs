@@ -60,15 +60,22 @@ namespace SmithSmsStatusFetcher.Services
                                                                     .Take(batchSize)
                                                                     .ToListAsync();
 
-            foreach (var status in statuses)
+            if (statuses.Count > 0)
             {
-                TwilioClient.Init(_twilioSecrets.AccountSid, _twilioSecrets.AuthToken);
+                foreach (var status in statuses)
+                {
+                    TwilioClient.Init(_twilioSecrets.AccountSid, _twilioSecrets.AuthToken);
 
-                var message = MessageResource.Fetch(
-                    pathSid: status.MessageSid
-               );
+                    var message = MessageResource.Fetch(
+                        pathSid: status.MessageSid
+                   );
 
-                await ProcessOneAsync(message, status);
+                    await ProcessOneAsync(message, status);
+                }
+            }
+            else
+            {
+                Console.WriteLine("*********************---ALL RECORDS PROCESSED---*********************");
             }
 
         }

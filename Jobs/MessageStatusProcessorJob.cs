@@ -27,6 +27,8 @@ namespace SmithSmsStatusFetcher.Jobs
         public async Task Execute(IJobExecutionContext context)
         {
 
+            _logger.LogInformation("Executing MessageStatusProcessorJob");
+
             // await _service.ReadOneMessagesAsync(sid);
 
             int batchSize = 50;
@@ -37,7 +39,6 @@ namespace SmithSmsStatusFetcher.Jobs
             //await Task.Delay(1000);
 
 
-            _logger.LogInformation("Executing MessageStatusProcessorJob");
 
             _logger.LogInformation("Finished Executing MessageStatusProcessorJob");
 
