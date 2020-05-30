@@ -58,7 +58,7 @@ namespace SmithSmsStatusFetcher
 
             services.AddSingleton(new JobSchedule(
                 jobType: typeof(MessageStatusProcessorJob),
-                cronExpression: "0/2 * * * * ?") // every 2 seconds
+                cronExpression: "0/1 * * * * ?") // every 1 seconds
                 );
 
             return services;
