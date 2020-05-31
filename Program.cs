@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using Dapper.Contrib.Extensions;
 using Microsoft.Extensions.Configuration;
 using SmithSmsStatusFetcher.Models;
 using SmithSmsStatusFetcher.Settings;
@@ -7,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Common;
-using System.Linq;
 using System.Threading.Tasks;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
@@ -55,50 +53,84 @@ namespace SmithSmsStatusFetcher
 
         public static void ReadBatchoFMesssages(int batchSize)
         {
-            var sql = $"SELECT * FROM assignment_message_status WHERE STATUS IS NULL ORDER BY message_sid LIMIT {batchSize}";
 
-            List<AssignmentMessagesStatus> statuses;
+            // get all the ids where status is null.
+
+            var s = "SELECT * FROM assignment_messages_status WHERE STATUS IS NULL ORDER BY message_sid";
+            List<string> ids;
             using (DbConnection conn = GetMySqlConnection(true, false, false))
             {
-                statuses = conn.Query<AssignmentMessagesStatus>(sql).ToList();
+                ids = conn.Query<string>(s) as List<string>;
             }
 
-            _ = Parallel.ForEach(statuses,
-                new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                (status, newStatus) =>
+
+            while (ids.Count > 0)
+            {
+
+
+                List<string> batchIds = new List<string>();
+                for (int x = 1; x <= batchSize; x++)
                 {
-                    TwilioClient.Init(_twilioSecrets.AccountSid, _twilioSecrets.AuthToken);
+                    if (ids.Count > 0)
+                    {
+                        batchIds.Add(ids[0]);
+                        ids.RemoveAt(0);
+                    }
+                }
 
-                    MessageResource message = MessageResource.Fetch(
-                        pathSid: status.MessageSid
-                    );
+                var sql = $"SELECT * FROM assignment_messages_status WHERE message_sid IN @ids";
+
+                List<AssignmentMessagesStatus> statuses;
+                using (DbConnection conn2 = GetMySqlConnection(true, false, false))
+                {
+                    statuses = conn2.Query<AssignmentMessagesStatus>(sql, new { ids = batchIds }) as List<AssignmentMessagesStatus>;
+                }
+
+                _ = Parallel.ForEach(statuses,
+                    new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+                    async (status, newStatus) =>
+                    {
+                        TwilioClient.Init(_twilioSecrets.AccountSid, _twilioSecrets.AuthToken);
+
+                        MessageResource message = MessageResource.Fetch(
+                            pathSid: status.Message_Sid
+                        );
 
 
-                    status.Status = message.Status.ToString();
-                    status.ErrorCode = message.ErrorCode;
+                        status.Status = message.Status.ToString();
+                        status.Error_Code = message.ErrorCode;
 
-                    using var connection = GetMySqlConnection(true, false, false);
-                    connection.Update(status);
+                        using var connection = GetMySqlConnection(true, false, false);
+                        var sql = "UPDATE assignment_messages_status SET status = @status, error_code = @errorCode WHERE message_sid = @id";
+                        await connection.ExecuteAsync(sql, new { status = status.Status, ErrorCode = status.Error_Code, id = status.Message_Sid });
 
 
 
-                });
+                    });
+
+                System.Threading.Thread.Sleep(1000);
+            }
         }
 
 
 
         internal static void LoadTwilioSecrets(IConfiguration config)
         {
-
-            _twilioSecrets.AuthToken = GetSetting<string>(config, "TwilioSecrets:AuthToken");
-            _twilioSecrets.AccountSid = GetSetting<string>(config, "TwilioSecrets:AccountSid");
+            _twilioSecrets = new TwilioSecrets
+            {
+                AuthToken = GetSetting<string>(config, "TwilioSecrets:AuthToken"),
+                AccountSid = GetSetting<string>(config, "TwilioSecrets:AccountSid")
+            };
         }
         internal static void LoadDbSettings(IConfiguration config)
         {
-            _dbSettings.Username = GetSetting<string>(config, "Database:Username");
-            _dbSettings.Password = GetSetting<string>(config, "Database:Password");
-            _dbSettings.Server = GetSetting<string>(config, "Database:Server");
-            _dbSettings.Database = GetSetting<string>(config, "Database:Database");
+            _dbSettings = new DbSettings
+            {
+                Username = GetSetting<string>(config, "Database:Username"),
+                Password = GetSetting<string>(config, "Database:Password"),
+                Server = GetSetting<string>(config, "Database:Server"),
+                Database = GetSetting<string>(config, "Database:Database")
+            };
         }
 
 
