@@ -14,31 +14,27 @@ namespace SmithSmsStatusFetcher
 {
     public class Program
     {
-        private static TwilioSecrets _twilioSecrets;
-        private static DbSettings _dbSettings;
+        private static IConfigurationRoot _configuration;
 
         public static void Main(string[] args)
         {
-            IConfigurationRoot configuration = new ConfigurationBuilder()
+            _configuration = new ConfigurationBuilder()
                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
                .AddUserSecrets<Program>()
                .Build();
 
-            LoadDbSettings(configuration);
-            LoadTwilioSecrets(configuration);
 
             ReadBatchoFMesssages(50);
-
-
         }
 
         public static DbProviderFactory Factory => MySql.Data.MySqlClient.MySqlClientFactory.Instance;
 
 
         private static DbConnection GetMySqlConnection(bool open = true,
-            bool convertZeroDatetime = false, bool allowZeroDatetime = false)
+        bool convertZeroDatetime = false, bool allowZeroDatetime = false)
         {
-            string cs = _dbSettings.ConnectionString;
+            var dbSettings = LoadDbSettings();
+            string cs = dbSettings.ConnectionString;
             var csb = Factory.CreateConnectionStringBuilder();
             csb.ConnectionString = cs;
             ((dynamic)csb).AllowZeroDateTime = allowZeroDatetime;
@@ -53,6 +49,7 @@ namespace SmithSmsStatusFetcher
 
         public static void ReadBatchoFMesssages(int batchSize)
         {
+            var twilioSecrets = LoadTwilioSecrets();
 
             // get all the ids where status is null.
 
@@ -90,7 +87,7 @@ namespace SmithSmsStatusFetcher
                     new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
                     async (status, newStatus) =>
                     {
-                        TwilioClient.Init(_twilioSecrets.AccountSid, _twilioSecrets.AuthToken);
+                        TwilioClient.Init(twilioSecrets.AccountSid, twilioSecrets.AuthToken);
 
                         MessageResource message = MessageResource.Fetch(
                             pathSid: status.Message_Sid
@@ -114,22 +111,22 @@ namespace SmithSmsStatusFetcher
 
 
 
-        internal static void LoadTwilioSecrets(IConfiguration config)
+        private static TwilioSecrets LoadTwilioSecrets()
         {
-            _twilioSecrets = new TwilioSecrets
+            return new TwilioSecrets
             {
-                AuthToken = GetSetting<string>(config, "TwilioSecrets:AuthToken"),
-                AccountSid = GetSetting<string>(config, "TwilioSecrets:AccountSid")
+                AuthToken = GetSetting<string>(_configuration, "TwilioSecrets:AuthToken"),
+                AccountSid = GetSetting<string>(_configuration, "TwilioSecrets:AccountSid")
             };
         }
-        internal static void LoadDbSettings(IConfiguration config)
+        private static DbSettings LoadDbSettings()
         {
-            _dbSettings = new DbSettings
+            return new DbSettings
             {
-                Username = GetSetting<string>(config, "Database:Username"),
-                Password = GetSetting<string>(config, "Database:Password"),
-                Server = GetSetting<string>(config, "Database:Server"),
-                Database = GetSetting<string>(config, "Database:Database")
+                Username = GetSetting<string>(_configuration, "Database:Username"),
+                Password = GetSetting<string>(_configuration, "Database:Password"),
+                Server = GetSetting<string>(_configuration, "Database:Server"),
+                Database = GetSetting<string>(_configuration, "Database:Database")
             };
         }
 
