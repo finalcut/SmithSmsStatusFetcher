@@ -56,7 +56,7 @@ namespace SmithSmsStatusFetcher
 
             var s = "SELECT * FROM assignment_messages_status WHERE STATUS IS NULL ORDER BY message_sid";
             List<string> ids;
-            using (DbConnection conn = GetMySqlConnection(true, false, false))
+            using (DbConnection conn = GetMySqlConnection())
             {
                 ids = conn.Query<string>(s) as List<string>;
             }
@@ -79,7 +79,7 @@ namespace SmithSmsStatusFetcher
                 var sql = $"SELECT * FROM assignment_messages_status WHERE message_sid IN @ids";
 
                 List<AssignmentMessagesStatus> statuses;
-                using (DbConnection conn2 = GetMySqlConnection(true, false, false))
+                using (DbConnection conn2 = GetMySqlConnection())
                 {
                     statuses = conn2.Query<AssignmentMessagesStatus>(sql, new { ids = batchIds }) as List<AssignmentMessagesStatus>;
                 }
@@ -108,7 +108,7 @@ namespace SmithSmsStatusFetcher
             status.Status = message.Status.ToString();
             status.Error_Code = message.ErrorCode;
 
-            using var connection = GetMySqlConnection(true, false, false);
+            using var connection = GetMySqlConnection();
             var sql = "UPDATE assignment_messages_status SET status = @status, error_code = @errorCode WHERE message_sid = @id";
             await connection.ExecuteAsync(sql, new { status = status.Status, ErrorCode = status.Error_Code, id = status.Message_Sid });
 
