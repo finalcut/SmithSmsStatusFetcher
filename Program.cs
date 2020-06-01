@@ -17,18 +17,27 @@ namespace SmithSmsStatusFetcher
         private static IConfigurationRoot _configuration;
         private static DbSettings _dbSettings;
         private static TwilioSecrets _twilioSecrets;
+        private static BatchSettings _batchSettings;
 
         public static void Main(string[] args)
         {
-            _configuration = new ConfigurationBuilder()
+            IConfigurationBuilder builder = new ConfigurationBuilder()
                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-               .AddUserSecrets<Program>()
-               .Build();
+               .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+               .AddUserSecrets<Program>();
+
+            if (args != null)
+            {
+                builder.AddCommandLine(args);
+            }
+
+            _configuration = builder.Build();
 
             _dbSettings = LoadDbSettings();
             _twilioSecrets = LoadTwilioSecrets();
+            _batchSettings = LoadBatchSettings();
 
-            ReadBatchoFMesssages(50);
+            ReadBatchoFMesssages();
         }
 
         public static DbProviderFactory Factory => MySql.Data.MySqlClient.MySqlClientFactory.Instance;
@@ -50,7 +59,7 @@ namespace SmithSmsStatusFetcher
 
 
 
-        public static void ReadBatchoFMesssages(int batchSize)
+        public static void ReadBatchoFMesssages()
         {
             // get all the ids where status is null.
 
@@ -67,7 +76,7 @@ namespace SmithSmsStatusFetcher
 
 
                 List<string> batchIds = new List<string>();
-                for (int x = 1; x <= batchSize; x++)
+                for (int x = 1; x <= _batchSettings.BatchSize; x++)
                 {
                     if (ids.Count > 0)
                     {
@@ -91,7 +100,7 @@ namespace SmithSmsStatusFetcher
                         await ProcessMessage(status);
                     });
 
-                System.Threading.Thread.Sleep(1000);
+                System.Threading.Thread.Sleep(_batchSettings.ApiCallPauseInMilliseconds);
             }
         }
 
@@ -133,6 +142,16 @@ namespace SmithSmsStatusFetcher
                 Server = GetSetting<string>(_configuration, "Database:Server"),
                 Database = GetSetting<string>(_configuration, "Database:Database")
             };
+        }
+
+        private static BatchSettings LoadBatchSettings()
+        {
+            return new BatchSettings
+            {
+                BatchSize = GetSetting<int>(_configuration, "Batch:Size"),
+                ApiCallPauseInMilliseconds = GetSetting<int>(_configuration, "Batch:ApiCallPauseInMilliseconds")
+            };
+
         }
 
 
