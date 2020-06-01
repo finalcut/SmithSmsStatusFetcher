@@ -15,6 +15,8 @@ namespace SmithSmsStatusFetcher
     public class Program
     {
         private static IConfigurationRoot _configuration;
+        private static DbSettings _dbSettings;
+        private static TwilioSecrets _twilioSecrets;
 
         public static void Main(string[] args)
         {
@@ -23,6 +25,8 @@ namespace SmithSmsStatusFetcher
                .AddUserSecrets<Program>()
                .Build();
 
+            _dbSettings = LoadDbSettings();
+            _twilioSecrets = LoadTwilioSecrets();
 
             ReadBatchoFMesssages(50);
         }
@@ -33,8 +37,7 @@ namespace SmithSmsStatusFetcher
         private static DbConnection GetMySqlConnection(bool open = true,
         bool convertZeroDatetime = false, bool allowZeroDatetime = false)
         {
-            var dbSettings = LoadDbSettings();
-            string cs = dbSettings.ConnectionString;
+            string cs = _dbSettings.ConnectionString;
             var csb = Factory.CreateConnectionStringBuilder();
             csb.ConnectionString = cs;
             ((dynamic)csb).AllowZeroDateTime = allowZeroDatetime;
@@ -49,8 +52,6 @@ namespace SmithSmsStatusFetcher
 
         public static void ReadBatchoFMesssages(int batchSize)
         {
-            var twilioSecrets = LoadTwilioSecrets();
-
             // get all the ids where status is null.
 
             var s = "SELECT * FROM assignment_messages_status WHERE STATUS IS NULL ORDER BY message_sid";
@@ -85,30 +86,34 @@ namespace SmithSmsStatusFetcher
 
                 _ = Parallel.ForEach(statuses,
                     new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                    async (status, newStatus) =>
+                    async (status) =>
                     {
-                        TwilioClient.Init(twilioSecrets.AccountSid, twilioSecrets.AuthToken);
-
-                        MessageResource message = MessageResource.Fetch(
-                            pathSid: status.Message_Sid
-                        );
-
-
-                        status.Status = message.Status.ToString();
-                        status.Error_Code = message.ErrorCode;
-
-                        using var connection = GetMySqlConnection(true, false, false);
-                        var sql = "UPDATE assignment_messages_status SET status = @status, error_code = @errorCode WHERE message_sid = @id";
-                        await connection.ExecuteAsync(sql, new { status = status.Status, ErrorCode = status.Error_Code, id = status.Message_Sid });
-
-
-
+                        await ProcessMessage(status);
                     });
 
                 System.Threading.Thread.Sleep(1000);
             }
         }
 
+
+        private static async Task ProcessMessage(AssignmentMessagesStatus status)
+        {
+            TwilioClient.Init(_twilioSecrets.AccountSid, _twilioSecrets.AuthToken);
+
+            MessageResource message = MessageResource.Fetch(
+                pathSid: status.Message_Sid
+            );
+
+
+            status.Status = message.Status.ToString();
+            status.Error_Code = message.ErrorCode;
+
+            using var connection = GetMySqlConnection(true, false, false);
+            var sql = "UPDATE assignment_messages_status SET status = @status, error_code = @errorCode WHERE message_sid = @id";
+            await connection.ExecuteAsync(sql, new { status = status.Status, ErrorCode = status.Error_Code, id = status.Message_Sid });
+
+
+        }
 
 
         private static TwilioSecrets LoadTwilioSecrets()
